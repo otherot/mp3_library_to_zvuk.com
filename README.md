@@ -132,7 +132,8 @@ CSV files saved to: C:\path\to\output
 mp3_library_to_zvuk.com/
 ├── main.py                 # CLI entry point
 ├── requirements.txt        # Python dependencies
-├── README.md               # This file
+├── README.md               # This file (EN)
+├── README_RU.md            # Documentation (RU)
 ├── src/
 │   ├── __init__.py         # Package initialization
 │   ├── config.py           # Configuration management
@@ -171,6 +172,13 @@ Check that `--library-path` points to an existing directory.
 - Verify the library path is correct
 - Run with `-v` flag for detailed logging
 
+### CSV encoding issues
+
+The application uses UTF-8 with BOM for proper Cyrillic support in Excel. If you encounter issues:
+- Open CSV in Excel via "Data" → "From Text/CSV"
+- Select UTF-8 encoding
+- Delimiter: semicolon (;)
+
 ## Testing
 
 Run unit tests:
@@ -197,3 +205,7 @@ python -m pytest tests/ -v
 ## License
 
 MIT License
+
+## Other Languages
+
+- 🇷🇺 [Русская версия](README_RU.md)

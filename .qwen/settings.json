@@ -9,7 +9,8 @@
       "Bash(python *)",
       "Bash(findstr *)",
       "Bash(select-object *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(git mv *)"
     ]
   }
 }
