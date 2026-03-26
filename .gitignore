@@ -36,6 +36,7 @@ wheels/
 
 # Qwen
 .qwen/
+CONTEXT.md
 
 # OS
 .DS_Store
