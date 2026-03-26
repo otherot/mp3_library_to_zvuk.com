@@ -30,8 +30,8 @@ TITLE_CLEANUP_PATTERNS = [
     r'^\d+[x\.]?\d*\s*[-\.]\s*',
     # OST/Soundtrack prefixes: "OST -", "Soundtrack -"
     r'^(ost|soundtrack|саундтрек)\s*[-:]\s*',
-    # Remix/Version suffixes in parentheses (but not Live/Acoustic)
-    r'\s*\([^)]*?(ost|soundtrack|саундтрек|remix|radio edit|album version|single version|remastered?|extended|mix|instrumental|feat\.?|ft\.?)[^)]*?\)',
+    # Version suffixes in parentheses (but not Live/Acoustic/Remix)
+    r'\s*\([^)]*?(ost|soundtrack|саундтрек|radio edit|album version|single version|remastered?|extended|instrumental|feat\.?|ft\.?)[^)]*?\)',
     # Suffixes: " - OST", " (Soundtrack)"
     r'\s*[-(](ost|soundtrack|саундтрек)[\s)]*',
 ]
