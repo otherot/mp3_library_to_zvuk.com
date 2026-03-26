@@ -1,7 +1,7 @@
 """
-Модуль сравнения библиотек
+Library comparison module
 
-Сравнивает локальную MP3-библиотеку с коллекцией zvuk.com
+Compares local MP3 library with zvuk.com collection
 """
 
 import logging
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class LibraryComparator:
-    """Компаратор для сравнения двух библиотек"""
+    """Comparator for comparing two libraries"""
     
     def __init__(
         self,
@@ -23,43 +23,43 @@ class LibraryComparator:
         progress_callback: Callable[[int, int], None] | None = None
     ):
         """
-        Инициализация компаратора
+        Initialize comparator
         
         Args:
-            local_tracks: Список локальных треков
-            zvuk_tracks: Список треков из zvuk.com
-            progress_callback: Callback для отображения прогресса (current, total)
+            local_tracks: List of local tracks
+            zvuk_tracks: List of tracks from zvuk.com
+            progress_callback: Callback for progress display (current, total)
         """
         self.local_tracks = local_tracks
         self.zvuk_tracks = zvuk_tracks
         self.progress_callback = progress_callback
-        logger.info(f"Инициализация компаратора: {len(local_tracks)} локальных, {len(zvuk_tracks)} zvuk")
+        logger.info(f"Initializing comparator: {len(local_tracks)} local, {len(zvuk_tracks)} zvuk")
     
     def compare(self) -> LibraryDiff:
         """
-        Сравнение библиотек
+        Compare libraries
         
         Returns:
-            LibraryDiff с результатами сравнения
+            LibraryDiff with comparison results
         """
-        logger.info("Начало сравнения библиотек")
+        logger.info("Starting library comparison")
         
-        # Создаём множества для быстрого поиска
-        # Используем (title, artist) как ключ
+        # Create sets for fast lookup
+        # Using (title, artist) as key
         local_set = self._create_track_set(self.local_tracks)
         zvuk_set = self._create_track_set(self.zvuk_tracks)
         
         local_keys = set(local_set.keys())
         zvuk_keys = set(zvuk_set.keys())
         
-        # Находим различия
+        # Find differences
         only_local_keys = local_keys - zvuk_keys
         only_zvuk_keys = zvuk_keys - local_keys
         match_keys = local_keys & zvuk_keys
         
-        logger.info(f"Найдено совпадений: {len(match_keys)}")
-        logger.info(f"Только локально: {len(only_local_keys)}")
-        logger.info(f"Только zvuk: {len(only_zvuk_keys)}")
+        logger.info(f"Found matches: {len(match_keys)}")
+        logger.info(f"Only local: {len(only_local_keys)}")
+        logger.info(f"Only zvuk: {len(only_zvuk_keys)}")
         
         diff = LibraryDiff(
             only_local=[local_set[key] for key in sorted(only_local_keys)],
@@ -67,27 +67,27 @@ class LibraryComparator:
             match=[local_set[key] for key in sorted(match_keys)]
         )
         
-        logger.info("Сравнение завершено")
+        logger.info("Comparison completed")
         return diff
     
     def _create_track_set(self, tracks: list[Track]) -> dict[tuple[str, str], Track]:
         """
-        Создание множества треков для быстрого поиска
+        Create track set for fast lookup
         
         Args:
-            tracks: Список треков
+            tracks: List of tracks
             
         Returns:
-            Словарь {(title, artist): Track}
+            Dictionary {(title, artist): Track}
         """
         track_dict = {}
         total = len(tracks)
         
         for i, track in enumerate(tracks):
-            # Нормализация ключа
+            # Normalize key
             key = self._normalize_track_key(track)
             
-            # Сохраняем трек (если дубликат - последний wins)
+            # Save track (if duplicate - last wins)
             track_dict[key] = track
             
             if self.progress_callback:
@@ -97,20 +97,20 @@ class LibraryComparator:
     
     def _normalize_track_key(self, track: Track) -> tuple[str, str]:
         """
-        Нормализация ключа трека для сравнения
+        Normalize track key for comparison
         
         Args:
-            track: Трек
+            track: Track
             
         Returns:
-            Кортеж (normalized_title, normalized_artist)
+            Tuple (normalized_title, normalized_artist)
         """
-        # Нормализация названия
+        # Normalize title
         title = track.title.lower().strip()
-        # Удаляем лишние пробелы, специальные символы
+        # Remove extra spaces, special characters
         title = " ".join(title.split())
         
-        # Нормализация исполнителя
+        # Normalize artist
         artist = track.artist.lower().strip()
         artist = " ".join(artist.split())
         

@@ -1,7 +1,7 @@
 """
-Модуль работы с API zvuk.com (GraphQL)
+Module for working with zvuk.com GraphQL API
 
-Основан на https://github.com/Aiving/sberzvuk-api
+Based on https://github.com/Aiving/sberzvuk-api
 """
 
 import logging
@@ -17,11 +17,11 @@ logger = logging.getLogger(__name__)
 
 
 class ZvukAPIClient:
-    """Клиент для работы с GraphQL API zvuk.com"""
+    """Client for working with zvuk.com GraphQL API"""
     
     BASE_URL = "https://zvuk.com/api/v1/graphql"
     
-    # GraphQL запросы
+    # GraphQL queries
     QUERY_GET_COLLECTION = """
     query getCollection($cursor: String, $limit: Int = 100) {
         collection(cursor: $cursor, limit: $limit) {
@@ -96,10 +96,10 @@ class ZvukAPIClient:
     
     def __init__(self, config: Config):
         """
-        Инициализация API клиента
+        Initialize API client
         
         Args:
-            config: Конфигурация приложения
+            config: Application configuration
         """
         self.config = config
         self.session = requests.Session()
@@ -107,33 +107,33 @@ class ZvukAPIClient:
             "Content-Type": "application/json",
             "X-Auth-Token": config.zvuk_api_token
         })
-        logger.info("API клиент zvuk.com инициализирован")
+        logger.info("Zvuk.com API client initialized")
     
     @staticmethod
     def get_anonymous_token() -> str:
         """
-        Получение анонимного токена
+        Get anonymous token
         
         Returns:
-            Токен для доступа к API
+            Token for API access
         """
         response = requests.get("https://zvuk.com/api/tiny/profile")
         response.raise_for_status()
         data = response.json()
         token = data.get("result", {}).get("token")
         if not token:
-            raise ValueError("Не удалось получить анонимный токен")
-        logger.info("Получен анонимный токен")
+            raise ValueError("Failed to get anonymous token")
+        logger.info("Anonymous token received")
         return token
     
     def get_library(self) -> list[Track]:
         """
-        Получение коллекции пользователя (библиотеки)
+        Get user collection (library)
         
         Returns:
-            Список треков из коллекции пользователя
+            List of tracks from user's zvuk.com collection
         """
-        logger.info("Получение коллекции пользователя из zvuk.com")
+        logger.info("Fetching user collection from zvuk.com")
         tracks = []
         cursor = None
         
@@ -156,7 +156,7 @@ class ZvukAPIClient:
                 if track:
                     tracks.append(track)
             
-            # Проверка наличия следующей страницы
+            # Check for next page
             page = collection.get("page", {})
             next_cursor = page.get("next")
             
@@ -165,18 +165,18 @@ class ZvukAPIClient:
             
             cursor = next_cursor
         
-        logger.info(f"Получено {len(tracks)} треков из коллекции zvuk.com")
+        logger.info(f"Received {len(tracks)} tracks from zvuk.com collection")
         return tracks
     
     def get_tracks_by_ids(self, track_ids: list[int]) -> list[Track]:
         """
-        Получение информации о треках по ID
+        Get track information by IDs
         
         Args:
-            track_ids: Список идентификаторов треков
+            track_ids: List of track IDs
             
         Returns:
-            Список объектов Track
+            List of Track objects
         """
         if not track_ids:
             return []
@@ -197,15 +197,15 @@ class ZvukAPIClient:
         variables: dict
     ) -> dict:
         """
-        Выполнение GraphQL запроса
+        Execute GraphQL query
         
         Args:
-            operation_name: Имя операции
-            query: Текст запроса
-            variables: Переменные запроса
+            operation_name: Operation name
+            query: Query text
+            variables: Query variables
             
         Returns:
-            Ответ от API
+            API response
         """
         payload = {
             "operationName": operation_name,
@@ -219,23 +219,23 @@ class ZvukAPIClient:
             return response.json()
             
         except requests.exceptions.HTTPError as e:
-            logger.error(f"HTTP ошибка при выполнении запроса {operation_name}: {e}")
+            logger.error(f"HTTP error executing {operation_name}: {e}")
             if e.response is not None:
-                logger.error(f"Ответ сервера: {e.response.text}")
+                logger.error(f"Server response: {e.response.text}")
             raise
         except requests.exceptions.RequestException as e:
-            logger.error(f"Ошибка запроса к API: {e}")
+            logger.error(f"Request error to API: {e}")
             raise
     
     def _parse_track_item(self, item: dict) -> Optional[Track]:
         """
-        Парсинг отдельного трека из ответа API
+        Parse individual track from API response
         
         Args:
-            item: Данные трека от API
+            item: Track data from API
             
         Returns:
-            Track или None если не удалось распарсить
+            Track or None if failed to parse
         """
         try:
             artists = item.get("artists", [])
@@ -255,21 +255,21 @@ class ZvukAPIClient:
             )
             
         except Exception as e:
-            logger.warning(f"Ошибка парсинга трека: {e}, данные: {item}")
+            logger.warning(f"Error parsing track: {e}, data: {item}")
             return None
     
     def test_connection(self) -> bool:
         """
-        Проверка подключения к API
+        Test API connection
         
         Returns:
-            True если подключение успешно
+            True if connection successful
         """
         try:
-            # Простой запрос для проверки токена
+            # Simple request to test token
             self.get_tracks_by_ids([1])
-            logger.info("Подключение к API zvuk.com успешно")
+            logger.info("Connection to zvuk.com API successful")
             return True
         except Exception as e:
-            logger.error(f"Ошибка подключения к API: {e}")
+            logger.error(f"Connection error to API: {e}")
             return False

@@ -22,17 +22,15 @@ Compare your local MP3 library with your collection on zvuk.com music streaming 
 pip install -r requirements.txt
 ```
 
-## Configuration
+## Usage
 
-### 1. Create `.env` file
-
-Copy `.env.example` to `.env` and fill in your values:
+### Basic Usage
 
 ```bash
-cp .env.example .env
+python main.py --token YOUR_TOKEN --library-path /path/to/your/mp3/library
 ```
 
-### 2. Get Zvuk.com API Token
+### Get API Token
 
 You have two options:
 
@@ -48,28 +46,12 @@ python -c "from src.zvuk_api import ZvukAPIClient; print(ZvukAPIClient.get_anony
 4. Visit https://zvuk.com/api/tiny/profile
 5. Copy the `token` value from the response
 
-### 3. Edit `.env` file
-
-```env
-ZVUK_API_TOKEN=your_token_here
-LOCAL_LIBRARY_PATH=C:\path\to\your\mp3\library
-```
-
-## Usage
-
-### Basic Usage
-
-```bash
-python main.py
-```
-
 ### Command Line Options
 
 ```
 Options:
-  -c, --config PATH       Path to .env configuration file
-  -l, --library-path PATH Path to local MP3 library (overrides .env)
-  -t, --token TEXT        Zvuk.com API token (overrides .env)
+  -t, --token TEXT        Zvuk.com API token (required)
+  -l, --library-path PATH Path to local MP3 library (required)
   -o, --output PATH       Output directory for CSV files
   -v, --verbose           Enable verbose output
   -q, --quiet             Suppress console output except errors
@@ -81,22 +63,22 @@ Options:
 
 **Test API connection:**
 ```bash
-python main.py --test-connection
+python main.py --token YOUR_TOKEN --library-path /path/to/library --test-connection
 ```
 
-**Specify library path and token directly:**
+**Full comparison with verbose output:**
 ```bash
-python main.py -l "D:\Music" -t "your_token_here"
+python main.py -t "your_token_here" -l "D:\Music" -v
 ```
 
-**Export to custom directory with verbose output:**
+**Export to custom directory:**
 ```bash
-python main.py -o "./results" -v
+python main.py -t "your_token_here" -l "D:\Music" -o "./results"
 ```
 
 **Quiet mode (CSV only):**
 ```bash
-python main.py -q
+python main.py -t "your_token_here" -l "D:\Music" -q
 ```
 
 ## Output
@@ -158,17 +140,19 @@ Each CSV contains the following columns:
 mp3_library_to_zvuk.com/
 ├── main.py                 # CLI entry point
 ├── requirements.txt        # Python dependencies
-├── .env.example           # Example configuration
+├── README.md               # This file
 ├── src/
-│   ├── __init__.py        # Package initialization
-│   ├── config.py          # Configuration management
-│   ├── models.py          # Data models (Track, LibraryDiff)
-│   ├── local_scanner.py   # Local MP3 library scanner
-│   ├── zvuk_api.py        # Zvuk.com GraphQL API client
-│   ├── comparator.py      # Library comparison logic
-│   ├── exporter.py        # Results exporter (CSV, console)
-│   └── cli.py             # Click CLI commands
-└── output/                # Generated CSV files
+│   ├── __init__.py         # Package initialization
+│   ├── config.py           # Configuration management
+│   ├── models.py           # Data models (Track, LibraryDiff)
+│   ├── local_scanner.py    # Local MP3 library scanner
+│   ├── zvuk_api.py         # Zvuk.com GraphQL API client
+│   ├── comparator.py       # Library comparison logic
+│   ├── exporter.py         # Results exporter (CSV, console)
+│   └── cli.py              # Click CLI commands
+├── tests/
+│   └── test_comparator.py  # Unit tests
+└── output/                 # Generated CSV files
 ```
 
 ## API Reference
@@ -179,19 +163,26 @@ The application uses zvuk.com's GraphQL API at `https://zvuk.com/api/v1/graphql`
 
 ## Troubleshooting
 
-### "Configuration error: ZVUK_API_TOKEN not found"
-
-Make sure you have created `.env` file with a valid token.
-
 ### "Path does not exist"
 
-Check that `LOCAL_LIBRARY_PATH` points to an existing directory.
+Check that `--library-path` points to an existing directory.
 
 ### API connection fails
 
 - Verify your token is valid
 - Check internet connection
 - Try getting a new token
+
+### "Error reading file"
+
+Some MP3 files may have corrupted ID3 tags. The scanner will continue and use filename as fallback.
+
+## Testing
+
+Run unit tests:
+```bash
+python -m pytest tests/ -v
+```
 
 ## License
 

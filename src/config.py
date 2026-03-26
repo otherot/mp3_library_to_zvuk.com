@@ -1,37 +1,30 @@
 """
-Модуль конфигурации приложения
+Configuration module for the application
 """
 
-import os
 from pathlib import Path
-from dotenv import load_dotenv
 
 
 class Config:
-    """Конфигурация приложения"""
-    
-    def __init__(self):
-        # Загружаем переменные окружения из .env файла
-        load_dotenv()
-        
-        self.zvuk_api_token = os.getenv("ZVUK_API_TOKEN")
-        self.local_library_path = os.getenv("LOCAL_LIBRARY_PATH")
-        
-        # Валидация
-        if not self.zvuk_api_token:
-            raise ValueError("ZVUK_API_TOKEN не найден в переменных окружения")
-        
-        if not self.local_library_path:
-            raise ValueError("LOCAL_LIBRARY_PATH не найден в переменных окружения")
-        
-        self.library_path = Path(self.local_library_path)
-        
+    """Application configuration"""
+
+    def __init__(self, token: str, library_path: str | Path):
+        """
+        Initialize configuration
+
+        Args:
+            token: Zvuk.com API token
+            library_path: Path to local MP3 library
+        """
+        self.zvuk_api_token = token
+        self.library_path = Path(library_path)
+
         if not self.library_path.exists():
-            raise ValueError(f"Путь к библиотеке не существует: {self.library_path}")
-    
+            raise ValueError(f"Library path does not exist: {self.library_path}")
+
     @property
     def api_headers(self) -> dict:
-        """Заголовки для API запросов"""
+        """Headers for API requests"""
         return {
             "Authorization": f"Bearer {self.zvuk_api_token}",
             "Content-Type": "application/json"

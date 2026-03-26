@@ -18,37 +18,37 @@ logger = logging.getLogger(__name__)
 
 
 class LocalLibraryScanner:
-    """Сканер локальной MP3-библиотеки"""
+    """Local MP3 library scanner"""
     
     SUPPORTED_EXTENSIONS = {".mp3"}
     
     def __init__(self, library_path: Path):
         """
-        Инициализация сканера
+        Initialize scanner
         
         Args:
-            library_path: Путь к директории с библиотекой
+            library_path: Path to library directory
         """
         self.library_path = library_path
-        logger.info(f"Инициализация сканера для пути: {library_path}")
+        logger.info(f"Initializing scanner for path: {library_path}")
     
     def scan(self) -> list[Track]:
         """
-        Сканирование библиотеки
+        Scan the library
         
         Returns:
-            Список треков с метаданными
+            List of tracks with metadata
         """
-        logger.info("Начало сканирования библиотеки")
+        logger.info("Starting library scan")
         tracks = list(self._find_all_tracks())
-        logger.info(f"Найдено {len(tracks)} треков")
+        logger.info(f"Found {len(tracks)} tracks")
         return tracks
     
     def _find_all_tracks(self) -> Generator[Track, None, None]:
-        """Генератор для поиска всех MP3-файлов"""
+        """Generator for finding all MP3 files"""
         for ext in self.SUPPORTED_EXTENSIONS:
             pattern = f"**/*{ext}"
-            logger.debug(f"Поиск файлов по паттерну: {pattern}")
+            logger.debug(f"Searching files by pattern: {pattern}")
             
             for file_path in self.library_path.glob(pattern):
                 track = self._parse_file(file_path)
@@ -57,18 +57,18 @@ class LocalLibraryScanner:
     
     def _parse_file(self, file_path: Path) -> Track | None:
         """
-        Извлечение метаданных из файла
+        Extract metadata from file
         
         Args:
-            file_path: Путь к файлу
+            file_path: Path to file
             
         Returns:
-            Track с метаданными или None если не удалось прочитать
+            Track with metadata or None if failed to read
         """
         try:
             audio = MP3(file_path, ID3=ID3)
             
-            # Извлекаем метаданные из ID3-тегов
+            # Extract metadata from ID3 tags
             title = self._get_tag(audio, TIT2)
             artist = self._get_tag(audio, TPE1)
             album = self._get_tag(audio, TALB)
@@ -76,7 +76,7 @@ class LocalLibraryScanner:
             genre = self._get_tag(audio, TCON)
             duration = int(audio.info.length) if audio.info else None
             
-            # Если нет тегов, используем имя файла
+            # If no tags, use filename
             if not title:
                 title = file_path.stem
             
@@ -91,8 +91,8 @@ class LocalLibraryScanner:
             )
             
         except Exception as e:
-            logger.warning(f"Ошибка чтения файла {file_path}: {e}")
-            # Возвращаем минимальный трек на основе имени файла
+            logger.warning(f"Error reading file {file_path}: {e}")
+            # Return minimal track based on filename
             return Track(
                 title=file_path.stem,
                 artist="Unknown Artist",
