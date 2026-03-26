@@ -42,12 +42,12 @@ class TorrentResultExporter:
         """
         filepath = self.output_dir / filename
         fieldnames = ["title", "source", "torrent_id", "magnet_link", "size",
-                      "seeds", "leeches", "uploader", "url"]
+                      "seeds", "leeches", "uploader", "upload_date", "category", "url"]
 
         # Use UTF-8 with BOM for proper Cyrillic support in Excel
         # Use semicolon delimiter for better compatibility
         with open(filepath, "w", newline="", encoding="utf-8-sig") as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=';')
+            writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=';', extrasaction='ignore')
             writer.writeheader()
 
             for result in results:
