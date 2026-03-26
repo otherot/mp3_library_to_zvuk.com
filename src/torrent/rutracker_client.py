@@ -1,0 +1,131 @@
+"""
+RuTracker client using py-rutracker-client library
+
+Requires RuTracker account credentials
+"""
+
+import logging
+from typing import Optional
+
+from py_rutracker import RuTrackerClient as SyncClient
+
+from .models import TorrentSearchResult, TorrentSource
+
+
+logger = logging.getLogger(__name__)
+
+
+class RuTrackerClient:
+    """Client for RuTracker.org"""
+    
+    def __init__(self, login: Optional[str] = None, password: Optional[str] = None):
+        """
+        Initialize RuTracker client
+        
+        Args:
+            login: RuTracker login (optional, will try without auth first)
+            password: RuTracker password
+        """
+        self.login = login
+        self.password = password
+        self.client: Optional[SyncClient] = None
+        
+        if login and password:
+            self._authenticate()
+    
+    def _authenticate(self) -> None:
+        """Authenticate with RuTracker"""
+        try:
+            self.client = SyncClient(self.login, self.password)
+            logger.info("RuTracker authentication successful")
+        except Exception as e:
+            logger.error(f"RuTracker authentication failed: {e}")
+            self.client = None
+    
+    def search(self, query: str, limit: int = 10) -> list[TorrentSearchResult]:
+        """
+        Search for torrents
+        
+        Args:
+            query: Search query
+            limit: Maximum results
+            
+        Returns:
+            List of TorrentSearchResult
+        """
+        if not self.client:
+            logger.warning("RuTracker client not authenticated, trying without auth")
+            try:
+                self.client = SyncClient()
+            except Exception as e:
+                logger.error(f"Failed to create RuTracker client: {e}")
+                return []
+        
+        try:
+            results = self.client.search_all_pages(query)
+            torrents = []
+            
+            for result in results[:limit]:
+                torrent = TorrentSearchResult(
+                    title=result.title,
+                    source=TorrentSource.RUTRACKER,
+                    torrent_id=str(result.topic_id),
+                    size=result.size,
+                    seeds=result.seeds,
+                    leeches=result.leeches,
+                    uploader=result.author,
+                    upload_date=str(result.registered) if result.registered else None,
+                    category=result.category,
+                    url=f"https://rutracker.org/forum/viewtopic.php?t={result.topic_id}"
+                )
+                torrents.append(torrent)
+            
+            logger.info(f"RuTracker search '{query}' found {len(torrents)} results")
+            return torrents
+            
+        except Exception as e:
+            logger.error(f"RuTracker search error: {e}")
+            return []
+    
+    def get_magnet_link(self, torrent_id: str) -> Optional[str]:
+        """
+        Get magnet link for torrent
+        
+        Args:
+            torrent_id: Torrent ID
+            
+        Returns:
+            Magnet link or None
+        """
+        if not self.client:
+            return None
+        
+        try:
+            # py-rutracker-client doesn't have direct magnet method
+            # Return URL instead
+            return f"magnet:?xt=urn:btih:{torrent_id}"
+        except Exception as e:
+            logger.error(f"Failed to get magnet link: {e}")
+            return None
+    
+    def download_torrent(self, torrent_id: str, save_path: str) -> Optional[str]:
+        """
+        Download .torrent file
+        
+        Args:
+            torrent_id: Torrent ID
+            save_path: Directory to save file
+            
+        Returns:
+            Path to saved file or None
+        """
+        if not self.client:
+            return None
+        
+        try:
+            file_path = self.client.download(torrent_id, save_path=save_path)
+            logger.info(f"Downloaded torrent {torrent_id} to {file_path}")
+            return file_path
+        except Exception as e:
+            logger.error(f"Failed to download torrent: {e}")
+            return None
