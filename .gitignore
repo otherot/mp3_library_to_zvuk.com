@@ -33,6 +33,9 @@ wheels/
 *.swp
 *.swo
 
+# Qwen
+.qwen/
+
 # OS
 .DS_Store
 Thumbs.db
