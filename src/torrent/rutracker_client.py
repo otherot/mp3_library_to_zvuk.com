@@ -42,13 +42,14 @@ class RuTrackerClient:
             logger.error(f"RuTracker authentication failed: {e}")
             self.client = None
 
-    def search(self, query: str, limit: int = 10) -> list[TorrentSearchResult]:
+    def search(self, query: str, limit: int = 10, format: Optional[str] = None) -> list[TorrentSearchResult]:
         """
         Search for torrents
 
         Args:
             query: Search query
             limit: Maximum results
+            format: Format filter (e.g., 'MP3', 'FLAC', 'ALAC')
 
         Returns:
             List of TorrentSearchResult
@@ -58,7 +59,12 @@ class RuTrackerClient:
             return []
 
         try:
-            results = self.client.search_all_pages(query)
+            # Add format to query if specified
+            search_query = query
+            if format:
+                search_query = f"{query} {format}"
+            
+            results = self.client.search_all_pages(search_query)
             torrents = []
 
             for result in results[:limit]:
@@ -66,6 +72,10 @@ class RuTrackerClient:
                 seeds = getattr(result, 'seeds', None) or getattr(result, 'seeders', 0)
                 leeches = getattr(result, 'leeches', None) or getattr(result, 'leechers', 0)
                 
+                # Skip if format doesn't match (check in title)
+                if format and format.upper() not in result.title.upper():
+                    continue
+
                 torrent = TorrentSearchResult(
                     title=result.title,
                     source=TorrentSource.RUTRACKER,
@@ -80,7 +90,7 @@ class RuTrackerClient:
                 )
                 torrents.append(torrent)
 
-            logger.info(f"RuTracker search '{query}' found {len(torrents)} results")
+            logger.info(f"RuTracker search '{search_query}' found {len(torrents)} results")
             return torrents
 
         except Exception as e:
@@ -89,21 +99,22 @@ class RuTrackerClient:
 
     def get_magnet_link(self, torrent_id: str) -> Optional[str]:
         """
-        Get magnet link for torrent
+        Get download link for torrent
 
         Args:
             torrent_id: Torrent ID
 
         Returns:
-            Magnet link or None
+            Download URL or None
         """
         if not self.client:
             return None
 
         try:
-            return f"magnet:?xt=urn:btih:{torrent_id}"
+            # Return RuTracker download URL (qBittorrent can handle this)
+            return f"https://rutracker.org/forum/dl.php?t={torrent_id}"
         except Exception as e:
-            logger.error(f"Failed to get magnet link: {e}")
+            logger.error(f"Failed to get download link: {e}")
             return None
 
     def download_torrent(self, torrent_id: str, save_path: str) -> Optional[str]:

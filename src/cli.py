@@ -192,10 +192,16 @@ def compare(ctx, token: str, library_path: str, output: str | None, test_connect
     default=5,
     help="Max results per track"
 )
+@click.option(
+    "--format", "-f",
+    type=click.Choice(['MP3', 'FLAC', 'ALAC'], case_sensitive=False),
+    default='MP3',
+    help="Preferred format (default: MP3)"
+)
 @click.pass_context
 def search_missing(ctx, token: str, library_path: str, output: str | None,
                    sources: tuple[str], rutracker_login: str | None,
-                   rutracker_password: str | None, limit: int) -> int:
+                   rutracker_password: str | None, limit: int, format: str) -> int:
     """Search for missing tracks on torrent trackers"""
     verbose = ctx.obj.get('verbose', False)
     quiet = ctx.obj.get('quiet', False)
@@ -240,7 +246,8 @@ def search_missing(ctx, token: str, library_path: str, output: str | None,
         search_engine = TorrentSearchEngine(
             rutracker_login=rutracker_login,
             rutracker_password=rutracker_password,
-            sources=source_enums
+            sources=source_enums,
+            format_filter=format if format.upper() != 'NONE' else None
         )
 
         # Search for each missing track

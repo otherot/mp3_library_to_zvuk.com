@@ -6,7 +6,8 @@
       "Bash(git commit *)",
       "Bash(git config *)",
       "Bash(dir *)",
-      "Bash(python *)"
+      "Bash(python *)",
+      "Bash(findstr *)"
     ]
   }
 }

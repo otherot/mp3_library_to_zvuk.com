@@ -24,7 +24,8 @@ class TorrentSearchEngine:
         self,
         rutracker_login: Optional[str] = None,
         rutracker_password: Optional[str] = None,
-        sources: Optional[list[TorrentSource]] = None
+        sources: Optional[list[TorrentSource]] = None,
+        format_filter: Optional[str] = None
     ):
         """
         Initialize search engine
@@ -33,6 +34,7 @@ class TorrentSearchEngine:
             rutracker_login: RuTracker login
             rutracker_password: RuTracker password
             sources: List of sources to search (default: all)
+            format_filter: Format filter for RuTracker (e.g., 'MP3', 'FLAC')
         """
         self.rutracker_client = RuTrackerClient(rutracker_login, rutracker_password)
         self.thirteensx_client = ThirteenXClient()
@@ -43,8 +45,11 @@ class TorrentSearchEngine:
             TorrentSource.THIRTEEN_X,
             TorrentSource.NNMCLUB
         ]
+        self.format_filter = format_filter
         
         logger.info(f"TorrentSearchEngine initialized with sources: {[s.value for s in self.sources]}")
+        if format_filter:
+            logger.info(f"Format filter: {format_filter}")
     
     def search(self, query: str, limit_per_source: int = 5) -> list[TorrentSearchResult]:
         """
@@ -59,10 +64,10 @@ class TorrentSearchEngine:
         """
         all_results = []
         
-        # Search RuTracker (sync)
+        # Search RuTracker (sync) with format filter
         if TorrentSource.RUTRACKER in self.sources:
             logger.info(f"Searching RuTracker: {query}")
-            results = self.rutracker_client.search(query, limit_per_source)
+            results = self.rutracker_client.search(query, limit_per_source, format=self.format_filter)
             all_results.extend(results)
         
         # Search async sources
