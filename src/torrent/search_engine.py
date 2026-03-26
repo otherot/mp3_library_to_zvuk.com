@@ -134,39 +134,41 @@ class TorrentSearchEngine:
     async def get_magnet_link(self, result: TorrentSearchResult) -> Optional[str]:
         """
         Get magnet link for search result
-        
+
         Args:
             result: TorrentSearchResult
-            
+
         Returns:
             Magnet link or None
         """
         if result.source == TorrentSource.RUTRACKER:
-            return self.rutracker_client.get_magnet_link(result.torrent_id)
+            return self.rutracker_client.get_magnet_link(result.torrent_id, result.title)
         elif result.source == TorrentSource.THIRTEEN_X:
             return await self.thirteensx_client.get_magnet_link(result.torrent_id)
         elif result.source == TorrentSource.NNMCLUB:
             return await self.nnmclub_client.get_magnet_link(result.torrent_id)
-        
+
         return None
     
     def get_all_magnet_links(self, results: list[TorrentSearchResult]) -> dict[str, Optional[str]]:
         """
         Get magnet links for multiple results
-        
+
         Args:
             results: List of TorrentSearchResult
-            
+
         Returns:
             Dict mapping torrent_id to magnet_link
         """
         magnet_links = {}
-        
-        # Sync (RuTracker)
+
+        # Sync (RuTracker) - download torrent files to extract info_hash
         for result in results:
             if result.source == TorrentSource.RUTRACKER:
-                magnet_links[result.torrent_id] = self.rutracker_client.get_magnet_link(result.torrent_id)
-        
+                magnet_links[result.torrent_id] = self.rutracker_client.get_magnet_link(
+                    result.torrent_id, result.title
+                )
+
         # Async (1337x, NNMClub)
         async def fetch_async():
             for result in results:
@@ -174,7 +176,7 @@ class TorrentSearchEngine:
                     magnet_links[result.torrent_id] = await self.thirteensx_client.get_magnet_link(result.torrent_id)
                 elif result.source == TorrentSource.NNMCLUB:
                     magnet_links[result.torrent_id] = await self.nnmclub_client.get_magnet_link(result.torrent_id)
-        
+
         asyncio.run(fetch_async())
-        
+
         return magnet_links

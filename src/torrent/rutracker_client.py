@@ -97,22 +97,38 @@ class RuTrackerClient:
             logger.error(f"RuTracker search error: {e}")
             return []
 
-    def get_magnet_link(self, torrent_id: str) -> Optional[str]:
+    def get_download_url(self, torrent_id: str) -> str:
         """
-        Get download link for torrent
-
+        Get RuTracker download URL
+        
         Args:
-            torrent_id: Torrent ID
-
+            torrent_id: Torrent ID (topic_id)
+            
         Returns:
-            Download URL or None
+            Download URL
         """
-        if not self.client:
-            return None
-
+        return f"{self.BASE_URL}/forum/dl.php?t={torrent_id}"
+    
+    def get_magnet_link(self, torrent_id: str, title: str = "") -> Optional[str]:
+        """
+        Get magnet link or download URL for torrent
+        
+        For RuTracker, we return the download URL which qBittorrent can handle
+        
+        Args:
+            torrent_id: Torrent ID (topic_id)
+            title: Torrent title (optional)
+            
+        Returns:
+            Magnet/download link or None
+        """
         try:
-            # Return RuTracker download URL (qBittorrent can handle this)
-            return f"https://rutracker.org/forum/dl.php?t={torrent_id}"
+            # qBittorrent can download from RuTracker URL directly
+            download_url = self.get_download_url(torrent_id)
+            
+            logger.info(f"Generated download URL for torrent {torrent_id}")
+            return download_url
+                
         except Exception as e:
             logger.error(f"Failed to get download link: {e}")
             return None
