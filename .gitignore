@@ -39,4 +39,8 @@ Thumbs.db
 
 # Output
 output/
+torrent_output/
+torrent_results/
+torrent_results_mp3/
+torrent_results_mp3_test/
 *.csv
