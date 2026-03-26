@@ -75,21 +75,23 @@ class ResultExporter:
     def _write_csv_file(self, filename: str, tracks: list) -> None:
         """
         Write tracks to a CSV file
-        
+
         Args:
             filename: Filename
             tracks: List of Track objects
         """
         filepath = self.output_dir / filename
         fieldnames = ["title", "artist", "album", "year", "genre", "duration", "file_path", "zvuk_id"]
-        
-        with open(filepath, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
+
+        # Use UTF-8 with BOM for proper Cyrillic support in Excel
+        # Use semicolon delimiter for better compatibility
+        with open(filepath, "w", newline="", encoding="utf-8-sig") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=';')
             writer.writeheader()
-            
+
             for track in tracks:
                 writer.writerow(track.to_dict())
-        
+
         logger.info(f"Written {len(tracks)} tracks to {filepath}")
     
     def print_summary(self) -> None:

@@ -28,29 +28,31 @@ class TorrentResultExporter:
         self.output_dir.mkdir(parents=True, exist_ok=True)
         logger.info(f"Torrent exporter initialized, output dir: {self.output_dir}")
     
-    def export_to_csv(self, results: list[TorrentSearchResult], 
+    def export_to_csv(self, results: list[TorrentSearchResult],
                       filename: str = "torrent_search_results.csv") -> Path:
         """
         Export results to CSV
-        
+
         Args:
             results: List of search results
             filename: Output filename
-            
+
         Returns:
             Path to created file
         """
         filepath = self.output_dir / filename
-        fieldnames = ["title", "source", "torrent_id", "magnet_link", "size", 
+        fieldnames = ["title", "source", "torrent_id", "magnet_link", "size",
                       "seeds", "leeches", "uploader", "url"]
-        
-        with open(filepath, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
+
+        # Use UTF-8 with BOM for proper Cyrillic support in Excel
+        # Use semicolon delimiter for better compatibility
+        with open(filepath, "w", newline="", encoding="utf-8-sig") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=';')
             writer.writeheader()
-            
+
             for result in results:
                 writer.writerow(result.to_dict())
-        
+
         logger.info(f"Exported {len(results)} results to {filepath}")
         return filepath
     
@@ -116,10 +118,13 @@ class TorrentResultExporter:
             })
         
         summary_path = self.output_dir / f"{filename_base}_summary.csv"
-        with open(summary_path, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=["title", "artist", "album", 
-                                                    "results_count", "top_result", 
-                                                    "top_source", "top_seeds"])
+        # Use UTF-8 with BOM for proper Cyrillic support in Excel
+        # Use semicolon delimiter for better compatibility
+        with open(summary_path, "w", newline="", encoding="utf-8-sig") as f:
+            writer = csv.DictWriter(f, fieldnames=["title", "artist", "album",
+                                                    "results_count", "top_result",
+                                                    "top_source", "top_seeds"],
+                                    delimiter=';')
             writer.writeheader()
             writer.writerows(summary_data)
         
