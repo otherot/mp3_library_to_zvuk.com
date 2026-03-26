@@ -134,6 +134,9 @@ def main(
         # Export results
         output_dir = Path(output) if output else None
         exporter = ResultExporter(diff, output_dir)
+        
+        # Export to CSV
+        exporter.export_csv()
 
         if not quiet:
             exporter.print_detailed()
