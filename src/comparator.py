@@ -5,12 +5,24 @@ Compares local MP3 library with zvuk.com collection
 """
 
 import logging
+import re
+import unicodedata
 from typing import Callable
 
 from .models import Track, LibraryDiff
 
 
 logger = logging.getLogger(__name__)
+
+# Known artist aliases (canonical name -> aliases)
+ARTIST_ALIASES = {
+    'tatu': ['t.a.t.u', 't.a.t.u.', 'тату'],
+    'linkin park': ['linkinpark'],
+    'gunsn roses': ['guns n roses', 'guns n\' roses', 'guns and roses'],
+    'acdc': ['ac/dc', 'ac dc'],
+    'nirvana': ['nirvana us'],
+    'metallica': ['metallica us'],
+}
 
 
 class LibraryComparator:
@@ -105,8 +117,6 @@ class LibraryComparator:
         Returns:
             Tuple (normalized_title, normalized_artist)
         """
-        import re
-
         # Normalize title
         title = track.title.lower().strip()
         # Remove extra spaces
@@ -123,6 +133,8 @@ class LibraryComparator:
         artist = re.sub(r'[\.\-\s]+$', '', artist)
         # Normalize unicode characters
         artist = self._normalize_unicode(artist)
+        # Remove all non-alphanumeric characters for matching
+        artist = self._normalize_artist_name(artist)
 
         return (title, artist)
 
@@ -136,8 +148,27 @@ class LibraryComparator:
         Returns:
             Normalized text
         """
-        import unicodedata
         # Normalize unicode characters (ë -> e, ü -> u, etc.)
         normalized = unicodedata.normalize('NFKD', text)
         # Remove diacritics
         return ''.join(c for c in normalized if not unicodedata.combining(c))
+
+    def _normalize_artist_name(self, artist: str) -> str:
+        """
+        Normalize artist name for better matching
+
+        Args:
+            artist: Normalized artist name
+
+        Returns:
+            Canonical artist name
+        """
+        # Remove all non-alphanumeric characters
+        clean = re.sub(r'[^a-zа-я0-9]', '', artist)
+
+        # Check for known aliases
+        for canonical, aliases in ARTIST_ALIASES.items():
+            if clean == canonical or clean in aliases:
+                return canonical
+
+        return clean
