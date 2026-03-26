@@ -1,8 +1,8 @@
 """
 MP3 Library to Zvuk.com Comparator
 
-Сравнение локальной MP3-библиотеки с библиотекой на zvuk.com
+Compare your local MP3 library with zvuk.com collection
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __author__ = "MP3 Library Comparator Team"
