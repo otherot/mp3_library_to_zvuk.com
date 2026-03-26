@@ -24,6 +24,18 @@ ARTIST_ALIASES = {
     'metallica': ['metallica us'],
 }
 
+# Patterns to remove from track titles
+TITLE_CLEANUP_PATTERNS = [
+    # Track number prefixes: "01 -", "05.", "1x05."
+    r'^\d+[x\.]?\d*\s*[-\.]\s*',
+    # OST/Soundtrack prefixes: "OST -", "Soundtrack -"
+    r'^(ost|soundtrack|саундтрек)\s*[-:]\s*',
+    # Remix/Version suffixes in parentheses (but not Live/Acoustic)
+    r'\s*\([^)]*?(ost|soundtrack|саундтрек|remix|radio edit|album version|single version|remastered?|extended|mix|instrumental|feat\.?|ft\.?)[^)]*?\)',
+    # Suffixes: " - OST", " (Soundtrack)"
+    r'\s*[-(](ost|soundtrack|саундтрек)[\s)]*',
+]
+
 
 class LibraryComparator:
     """Comparator for comparing two libraries"""
@@ -150,6 +162,7 @@ class LibraryComparator:
             # Normalize title
             title = track.title.lower().strip()
             title = " ".join(title.split())
+            title = self._cleanup_title(title)
             title = re.sub(r'[\.\-\s]+$', '', title)
             title = self._normalize_unicode(title)
 
@@ -190,6 +203,8 @@ class LibraryComparator:
         title = track.title.lower().strip()
         # Remove extra spaces
         title = " ".join(title.split())
+        # Remove track number prefixes, OST markers, remix info
+        title = self._cleanup_title(title)
         # Remove trailing punctuation (dots, dashes, etc.)
         title = re.sub(r'[\.\-\s]+$', '', title)
         # Normalize unicode characters (ë -> e, etc.)
@@ -206,6 +221,24 @@ class LibraryComparator:
         artist = self._normalize_artist_name(artist)
 
         return (title, artist)
+
+    def _cleanup_title(self, title: str) -> str:
+        """
+        Clean up track title by removing common prefixes and suffixes
+
+        Args:
+            title: Original track title
+
+        Returns:
+            Cleaned title
+        """
+        for pattern in TITLE_CLEANUP_PATTERNS:
+            title = re.sub(pattern, '', title, flags=re.IGNORECASE)
+
+        # Clean up extra spaces after removals
+        title = " ".join(title.split())
+
+        return title
 
     def _normalize_unicode(self, text: str) -> str:
         """
