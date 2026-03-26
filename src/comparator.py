@@ -4,9 +4,11 @@ Library comparison module
 Compares local MP3 library with zvuk.com collection
 """
 
+import json
 import logging
 import re
 import unicodedata
+from pathlib import Path
 from typing import Callable
 
 from .models import Track, LibraryDiff
@@ -14,27 +16,15 @@ from .models import Track, LibraryDiff
 
 logger = logging.getLogger(__name__)
 
-# Known artist aliases (canonical name -> aliases)
-ARTIST_ALIASES = {
-    'tatu': ['t.a.t.u', 't.a.t.u.', 'тату'],
-    'linkin park': ['linkinpark'],
-    'gunsn roses': ['guns n roses', 'guns n\' roses', 'guns and roses'],
-    'acdc': ['ac/dc', 'ac dc'],
-    'nirvana': ['nirvana us'],
-    'metallica': ['metallica us'],
-}
+# Load normalization config
+_CONFIG_PATH = Path(__file__).parent / "config" / "normalization.json"
+with open(_CONFIG_PATH, "r", encoding="utf-8") as f:
+    _NORMALIZATION_CONFIG = json.load(f)
 
-# Patterns to remove from track titles
-TITLE_CLEANUP_PATTERNS = [
-    # Track number prefixes: "01 -", "05.", "1x05."
-    r'^\d+[x\.]?\d*\s*[-\.]\s*',
-    # OST/Soundtrack prefixes: "OST -", "Soundtrack -"
-    r'^(ost|soundtrack|саундтрек)\s*[-:]\s*',
-    # Version suffixes in parentheses (but not Live/Acoustic/Remix)
-    r'\s*\([^)]*?(ost|soundtrack|саундтрек|radio edit|album version|single version|remastered?|extended|instrumental|feat\.?|ft\.?)[^)]*?\)',
-    # Suffixes: " - OST", " (Soundtrack)"
-    r'\s*[-(](ost|soundtrack|саундтрек)[\s)]*',
-]
+ARTIST_ALIASES = _NORMALIZATION_CONFIG["artist_aliases"]
+NUMBER_WORDS = _NORMALIZATION_CONFIG["number_words"]
+NAME_VARIANTS = _NORMALIZATION_CONFIG["name_variants"]
+TITLE_CLEANUP_PATTERNS = _NORMALIZATION_CONFIG["title_cleanup_patterns"]
 
 
 class LibraryComparator:
@@ -273,4 +263,47 @@ class LibraryComparator:
             if clean == canonical or clean in aliases:
                 return canonical
 
+        # Apply automatic normalizations
+        clean = self._auto_normalize_artist(clean)
+
         return clean
+
+    def _auto_normalize_artist(self, artist: str) -> str:
+        """
+        Apply automatic normalization rules to artist name
+
+        Args:
+            artist: Cleaned artist name (alphanumeric only)
+
+        Returns:
+            Normalized artist name
+        """
+        # Remove leading "the" (thebeatles -> beatles)
+        if artist.startswith('the'):
+            artist = artist[3:]
+
+        # Convert numbers to words (30secondstomars -> thirtysecondstomars)
+        # Sort by length descending to replace longer matches first
+        for num, word in sorted(NUMBER_WORDS.items(), key=lambda x: -len(x[0])):
+            artist = artist.replace(num, word)
+
+        # Handle common name variations (цой -> викторцой)
+        artist = self._handle_name_variants(artist)
+
+        return artist
+
+    def _handle_name_variants(self, artist: str) -> str:
+        """
+        Handle artist name variants like "Цой" vs "Виктор Цой"
+
+        Args:
+            artist: Artist name
+
+        Returns:
+            Normalized artist name
+        """
+        for canonical, variants in NAME_VARIANTS.items():
+            if artist == canonical or artist in variants:
+                return canonical
+
+        return artist
