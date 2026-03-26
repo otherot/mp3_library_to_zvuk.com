@@ -50,61 +50,130 @@ class LibraryComparator:
     def compare(self) -> LibraryDiff:
         """
         Compare libraries
-        
+
         Returns:
             LibraryDiff with comparison results
         """
         logger.info("Starting library comparison")
-        
+
         # Create sets for fast lookup
         # Using (title, artist) as key
         local_set = self._create_track_set(self.local_tracks)
         zvuk_set = self._create_track_set(self.zvuk_tracks)
-        
+
+        # Also create sets with individual artists for multi-artist tracks
+        local_multi = self._create_multi_artist_set(self.local_tracks)
+        zvuk_multi = self._create_multi_artist_set(self.zvuk_tracks)
+
         local_keys = set(local_set.keys())
         zvuk_keys = set(zvuk_set.keys())
-        
+
+        # Find matches including multi-artist cases
+        match_keys = local_keys & zvuk_keys
+
+        # Also find matches where one has single artist and other has multiple
+        local_individual = set(local_multi.keys())
+        zvuk_individual = set(zvuk_multi.keys())
+        multi_match_keys = local_individual & zvuk_individual
+
+        # Add multi-artist matches that weren't already found
+        new_matches = multi_match_keys - match_keys
+
+        # Map individual keys back to full keys for multi-artist matches
+        for ind_key in new_matches:
+            title, artist = ind_key
+            # Find corresponding full tracks
+            local_track = local_multi.get(ind_key)
+            zvuk_track = zvuk_multi.get(ind_key)
+            if local_track and zvuk_track:
+                # Create full keys
+                local_full_key = self._normalize_track_key(local_track)
+                zvuk_full_key = self._normalize_track_key(zvuk_track)
+                # Add to match_keys using the local version
+                match_keys.add(local_full_key)
+
         # Find differences
         only_local_keys = local_keys - zvuk_keys
         only_zvuk_keys = zvuk_keys - local_keys
-        match_keys = local_keys & zvuk_keys
-        
+
         logger.info(f"Found matches: {len(match_keys)}")
         logger.info(f"Only local: {len(only_local_keys)}")
         logger.info(f"Only zvuk: {len(only_zvuk_keys)}")
-        
+
         diff = LibraryDiff(
             only_local=[local_set[key] for key in sorted(only_local_keys)],
             only_zvuk=[zvuk_set[key] for key in sorted(only_zvuk_keys)],
             match=[local_set[key] for key in sorted(match_keys)]
         )
-        
+
         logger.info("Comparison completed")
         return diff
     
     def _create_track_set(self, tracks: list[Track]) -> dict[tuple[str, str], Track]:
         """
         Create track set for fast lookup
-        
+
         Args:
             tracks: List of tracks
-            
+
         Returns:
             Dictionary {(title, artist): Track}
         """
         track_dict = {}
         total = len(tracks)
-        
+
         for i, track in enumerate(tracks):
             # Normalize key
             key = self._normalize_track_key(track)
-            
+
             # Save track (if duplicate - last wins)
             track_dict[key] = track
-            
+
             if self.progress_callback:
                 self.progress_callback(i + 1, total)
-        
+
+        return track_dict
+
+    def _create_multi_artist_set(self, tracks: list[Track]) -> dict[tuple[str, str], Track]:
+        """
+        Create track set with individual artists for multi-artist tracks
+
+        Args:
+            tracks: List of tracks
+
+        Returns:
+            Dictionary {(title, individual_artist): Track}
+        """
+        track_dict = {}
+
+        for track in tracks:
+            # Normalize title
+            title = track.title.lower().strip()
+            title = " ".join(title.split())
+            title = re.sub(r'[\.\-\s]+$', '', title)
+            title = self._normalize_unicode(title)
+
+            # Normalize artist
+            artist = track.artist.lower().strip()
+            artist = " ".join(artist.split())
+            artist = re.sub(r'[\.\-\s]+$', '', artist)
+            artist = self._normalize_unicode(artist)
+
+            # Split by common multi-artist separators
+            separators = [',', ' feat. ', ' feat ', ' ft. ', ' ft ', ' vs. ', ' vs ', ' & ', ' x ', ' + ']
+            artists = [artist]
+            for sep in separators:
+                if sep in artist:
+                    artists = artist.split(sep)
+                    break
+
+            # Create entry for each individual artist
+            for individual in artists:
+                individual = individual.strip()
+                individual = self._normalize_artist_name(individual)
+                key = (title, individual)
+                track_dict[key] = track
+
         return track_dict
     
     def _normalize_track_key(self, track: Track) -> tuple[str, str]:
