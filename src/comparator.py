@@ -234,12 +234,24 @@ class LibraryComparator:
         """
         Normalize unicode characters to ASCII equivalents
 
+        Only applies to Latin characters to preserve Cyrillic letters like 'й'
+
         Args:
             text: Input text
 
         Returns:
             Normalized text
         """
+        # Only normalize if text contains Latin characters with diacritics
+        # Preserve Cyrillic letters intact
+        import string
+        has_latin = any(c in string.ascii_letters for c in text)
+        has_cyrillic = any('\u0400' <= c <= '\u04FF' for c in text)
+
+        # Don't normalize pure Cyrillic text (preserves 'й', 'ё', etc.)
+        if has_cyrillic and not has_latin:
+            return text
+
         # Normalize unicode characters (ë -> e, ü -> u, etc.)
         normalized = unicodedata.normalize('NFKD', text)
         # Remove diacritics
@@ -303,7 +315,14 @@ class LibraryComparator:
             Normalized artist name
         """
         for canonical, variants in NAME_VARIANTS.items():
+            # Check if artist matches canonical or any variant
             if artist == canonical or artist in variants:
+                return canonical
+            # Check if artist contains canonical/variant or vice versa
+            if canonical in artist or any(v in artist for v in variants):
+                return canonical
+            # Check if artist is contained in canonical/variant
+            if artist in canonical or any(artist in v for v in variants):
                 return canonical
 
         return artist
