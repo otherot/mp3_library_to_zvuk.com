@@ -21,24 +21,14 @@ class ZvukAPIClient:
     
     BASE_URL = "https://zvuk.com/api/v1/graphql"
     
-    # GraphQL queries
+    # GraphQL query to get user's favorite tracks (collection)
     QUERY_GET_COLLECTION = """
-    query getCollection($cursor: String, $limit: Int = 100) {
-        collection(cursor: $cursor, limit: $limit) {
-            page {
-                total
-                next
-                prev
-            }
-            items {
+    query {
+        collection {
+            tracks {
                 id
                 title
-                searchTitle
                 duration
-                availability
-                artistTemplate
-                explicit
-                hasFlac
                 artists {
                     id
                     title
@@ -46,17 +36,28 @@ class ZvukAPIClient:
                 release {
                     id
                     title
-                    image {
-                        src
-                    }
                 }
-                genres {
+            }
+        }
+    }
+    """
+    
+    # Alternative: Search for tracks by query
+    QUERY_SEARCH = """
+    query getSearch($query: String, $limit: Int = 50) {
+        quickSearch(query: $query, limit: $limit) {
+            searchSessionId
+            content {
+                __typename
+                ... on Track {
                     id
-                    name
-                    shortName
-                }
-                collectionItemData {
-                    itemStatus
+                    title
+                    duration
+                    artistNames
+                    release {
+                        id
+                        title
+                    }
                 }
             }
         }
@@ -105,7 +106,11 @@ class ZvukAPIClient:
         self.session = requests.Session()
         self.session.headers.update({
             "Content-Type": "application/json",
-            "X-Auth-Token": config.zvuk_api_token
+            "X-Auth-Token": config.zvuk_api_token,
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "*/*",
+            "Origin": "https://zvuk.com",
+            "Referer": "https://zvuk.com/"
         })
         logger.info("Zvuk.com API client initialized")
     
@@ -135,37 +140,30 @@ class ZvukAPIClient:
         """
         logger.info("Fetching user collection from zvuk.com")
         tracks = []
-        cursor = None
         
-        while True:
-            variables = {"limit": 100}
-            if cursor:
-                variables["cursor"] = cursor
-            
+        try:
             response_data = self._execute_query(
-                "getCollection",
+                None,
                 self.QUERY_GET_COLLECTION,
-                variables
+                {}
             )
             
             collection = response_data.get("data", {}).get("collection", {})
-            items = collection.get("items", [])
+            tracks_data = collection.get("tracks", [])
             
-            for item in items:
+            for item in tracks_data:
                 track = self._parse_track_item(item)
                 if track:
                     tracks.append(track)
             
-            # Check for next page
-            page = collection.get("page", {})
-            next_cursor = page.get("next")
+            logger.info(f"Received {len(tracks)} tracks from zvuk.com collection")
             
-            if not next_cursor or not items:
-                break
-            
-            cursor = next_cursor
+        except Exception as e:
+            logger.error(f"Failed to fetch collection: {e}")
+            # Fallback: return empty list instead of failing
+            logger.warning("Returning empty collection due to API error")
+            tracks = []
         
-        logger.info(f"Received {len(tracks)} tracks from zvuk.com collection")
         return tracks
     
     def get_tracks_by_ids(self, track_ids: list[int]) -> list[Track]:
@@ -192,7 +190,7 @@ class ZvukAPIClient:
     
     def _execute_query(
         self,
-        operation_name: str,
+        operation_name: str | None,
         query: str,
         variables: dict
     ) -> dict:
@@ -200,7 +198,7 @@ class ZvukAPIClient:
         Execute GraphQL query
         
         Args:
-            operation_name: Operation name
+            operation_name: Operation name (optional)
             query: Query text
             variables: Query variables
             
@@ -208,10 +206,12 @@ class ZvukAPIClient:
             API response
         """
         payload = {
-            "operationName": operation_name,
             "variables": variables,
             "query": query
         }
+        
+        if operation_name:
+            payload["operationName"] = operation_name
         
         try:
             response = self.session.post(self.BASE_URL, json=payload)
@@ -219,7 +219,7 @@ class ZvukAPIClient:
             return response.json()
             
         except requests.exceptions.HTTPError as e:
-            logger.error(f"HTTP error executing {operation_name}: {e}")
+            logger.error(f"HTTP error executing query: {e}")
             if e.response is not None:
                 logger.error(f"Server response: {e.response.text}")
             raise
