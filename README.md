@@ -1,28 +1,20 @@
 # MP3 Library to Zvuk.com Comparator
 
-Compare your local MP3 library with your collection on zvuk.com music streaming service. Optionally search for missing tracks on torrent trackers.
+Compare your local MP3 library with your collection on zvuk.com music streaming service.
 
 ## Features
 
-### Core Features
 - 📁 Scan local MP3 library with metadata extraction (ID3 tags)
 - 🎵 Fetch your collection from zvuk.com via GraphQL API
 - 🔍 Compare libraries and find differences
 - 📊 Export results to CSV files
 - 💻 Console output with summary and detailed view
 
-### Torrent Search (v0.2.0+)
-- 🔎 Search for missing tracks on torrent trackers
-- 🌐 Multiple sources: RuTracker, 1337x, nnmclub
-- 🧲 Generate magnet links
-- ⬇️ Auto-download via qBittorrent Web API
-
 ## Installation
 
 ### Requirements
 
 - Python 3.10 or higher
-- qBittorrent with Web UI enabled (optional, for auto-download)
 
 ### Install Dependencies
 
@@ -36,12 +28,6 @@ pip install -r requirements.txt
 
 ```bash
 python main.py compare --token YOUR_TOKEN --library-path /path/to/your/mp3/library
-```
-
-### Search for Missing Tracks
-
-```bash
-python main.py search-missing -t YOUR_TOKEN -l /path/to/library -o output
 ```
 
 ### Get API Token
@@ -74,99 +60,71 @@ Options:
   -q, --quiet             Suppress console output
 ```
 
-### `search-missing` - Search torrents for missing tracks
-
-```bash
-python main.py search-missing [OPTIONS]
-
-Options:
-  -t, --token TEXT                Zvuk.com API token (required)
-  -l, --library-path PATH         Path to local MP3 library (required)
-  -o, --output PATH               Output directory for search results
-  -s, --sources [rutracker|1337x|nnmclub]
-                                  Torrent sources to search (default: all)
-  --rutracker-login TEXT          RuTracker login (optional)
-  --rutracker-password TEXT       RuTracker password (optional)
-  --limit INTEGER                 Max results per track (default: 5)
-  -v, --verbose                   Enable verbose output
-  -q, --quiet                     Suppress console output
-```
-
 **Examples:**
 
 ```bash
-# Search all sources
-python main.py search-missing -t TOKEN -l "D:\Music" -o torrent_results
+# Compare libraries
+python main.py compare -t TOKEN -l "D:\Music" -o output
 
-# Search only RuTracker with credentials
-python main.py search-missing -t TOKEN -l "D:\Music" -s rutracker \
-  --rutracker-login myuser --rutracker-password mypass
+# Test connection first
+python main.py compare -t TOKEN -l "D:\Music" --test-connection
 
-# Search 1337x and nnmclub only
-python main.py search-missing -t TOKEN -l "D:\Music" -s 1337x -s nnmclub
-```
-
-### `add-torrent` - Add torrent to qBittorrent
-
-```bash
-python main.py add-torrent [OPTIONS]
-
-Options:
-  -m, --magnet TEXT     Magnet link or torrent URL (required)
-  -p, --save-path PATH  Download path
-  --host TEXT           qBittorrent host (default: localhost)
-  --port INTEGER        qBittorrent Web UI port (default: 8080)
-  --username TEXT       qBittorrent Web UI username
-  --password TEXT       qBittorrent Web UI password
-```
-
-**Examples:**
-
-```bash
-# Add magnet link
-python main.py add-torrent -m "magnet:?xt=urn:btih:..."
-
-# Add with custom save path
-python main.py add-torrent -m "magnet:..." -p "D:\Downloads\Music"
-
-# Connect to remote qBittorrent
-python main.py add-torrent -m "magnet:..." --host 192.168.1.100 --port 8080 \
-  --username admin --password adminadmin
+# Verbose output
+python main.py compare -t TOKEN -l "D:\Music" -v
 ```
 
 ## Output
 
 ### Comparison Results
 
-Three CSV files are created:
-- `comparison_result_only_local.csv` - Tracks only in your local library
-- `comparison_result_only_zvuk.csv` - Tracks only in zvuk.com collection
-- `comparison_result_match.csv` - Tracks present in both libraries
+Three CSV files are created in the output directory:
 
-### Torrent Search Results
+| File | Description |
+|------|-------------|
+| `comparison_result_only_local.csv` | Tracks only in your local library |
+| `comparison_result_only_zvuk.csv` | Tracks only in zvuk.com collection |
+| `comparison_result_match.csv` | Tracks present in both libraries |
 
-- `torrent_search_results.csv` - All search results with magnet links
-- `missing_tracks_summary.csv` - Summary of missing tracks with top results
-- `missing_tracks_magnets.txt` - Magnet links for manual download
+Each CSV contains the following columns:
+- `title` - Track title
+- `artist` - Artist name
+- `album` - Album name
+- `year` - Release year
+- `genre` - Genre
+- `duration` - Duration in seconds
+- `file_path` - Local file path (for local tracks)
+- `zvuk_id` - Zvuk.com track ID (for zvuk tracks)
 
-## qBittorrent Setup
+### Console Output
 
-To use the auto-download feature:
+```
+============================================================
+LIBRARY COMPARISON SUMMARY
+============================================================
+Only in local library:     150 tracks
+Only in zvuk.com:           75 tracks
+Match (in both):           500 tracks
+============================================================
 
-1. **Enable Web UI in qBittorrent:**
-   - Tools → Options → Web UI
-   - Check "Enable Web User Interface"
-   - Set port (default: 8080)
-   - Set username and password
+📁 ONLY IN LOCAL LIBRARY:
+----------------------------------------
+  • Artist Name - Track Title
+  • ...
 
-2. **Allow remote connections (if needed):**
-   - Check "Allow remote connections"
-   - Add your IP to allowed IPs if restricting
+🎵 ONLY IN ZVUK.COM:
+----------------------------------------
+  • Artist Name - Track Title
+  • ...
 
-3. **Test connection:**
-   ```bash
-   python main.py add-torrent -m "magnet:?xt=urn:btih:TEST" --host localhost --port 8080
-   ```
+✅ MATCH (IN BOTH):
+----------------------------------------
+  • Artist Name - Track Title
+  • ...
+
+============================================================
+CSV files saved to: C:\path\to\output
+============================================================
+```
 
 ## Project Structure
 
@@ -183,20 +141,10 @@ mp3_library_to_zvuk.com/
 │   ├── zvuk_api.py         # Zvuk.com GraphQL API client
 │   ├── comparator.py       # Library comparison logic
 │   ├── exporter.py         # Results exporter (CSV, console)
-│   ├── cli.py              # Click CLI commands
-│   └── torrent/            # Torrent search module
-│       ├── __init__.py
-│       ├── models.py       # Torrent search models
-│       ├── rutracker_client.py
-│       ├── thirteensx_client.py
-│       ├── nnmclub_client.py
-│       ├── qbittorrent_client.py
-│       ├── search_engine.py
-│       └── exporter.py
+│   └── cli.py              # Click CLI commands
 ├── tests/
 │   └── test_comparator.py  # Unit tests
-├── output/                 # Comparison CSV files
-└── torrent_output/         # Torrent search results
+└── output/                 # Generated CSV files
 ```
 
 ## API Reference
@@ -204,14 +152,6 @@ mp3_library_to_zvuk.com/
 Based on [sberzvuk-api](https://github.com/Aiving/sberzvuk-api)
 
 The application uses zvuk.com's GraphQL API at `https://zvuk.com/api/v1/graphql`
-
-## Torrent Sources
-
-| Source | Auth Required | Notes |
-|--------|---------------|-------|
-| RuTracker | Optional | Best for Russian content, requires account for full access |
-| 1337x | No | International tracker, good for English content |
-| nnmclub | No | Russian tracker, mirror of RuTracker |
 
 ## Troubleshooting
 
@@ -225,22 +165,11 @@ Check that `--library-path` points to an existing directory.
 - Check internet connection
 - Try getting a new token
 
-### qBittorrent connection fails
+### CSV files are empty
 
-- Ensure Web UI is enabled
-- Check host/port settings
-- Verify username/password
-- Check firewall settings
-
-### Torrent search returns no results
-
-- Try different sources with `-s` option
-- Increase limit with `--limit`
-- Some tracks may not be available on torrent trackers
-
-## Legal Notice
-
-⚠️ **Important:** Downloading copyrighted material may be illegal in your jurisdiction. This tool is provided for educational purposes only. Use responsibly and in compliance with applicable laws.
+- Check that your local library contains MP3 files
+- Verify the library path is correct
+- Run with `-v` flag for detailed logging
 
 ## Testing
 
@@ -256,10 +185,9 @@ python -m pytest tests/ -v
 ### Changelog
 
 **v0.2.0**
-- Added torrent search functionality
-- Support for RuTracker, 1337x, nnmclub
-- qBittorrent integration for auto-download
-- Export magnet links to file
+- Improved CSV export with UTF-8 BOM encoding
+- Semicolon delimiter for better Excel compatibility
+- Bug fixes and stability improvements
 
 **v0.1.0**
 - Initial release
