@@ -109,6 +109,51 @@ class RuTrackerClient:
         """
         return f"{self.BASE_URL}/forum/dl.php?t={torrent_id}"
     
+    def download_torrent_file(self, torrent_id: str, save_path: str = None) -> Optional[str]:
+        """
+        Download .torrent file from RuTracker
+        
+        Args:
+            torrent_id: Torrent ID (topic_id)
+            save_path: Directory to save file (default: system temp)
+            
+        Returns:
+            Path to downloaded .torrent file or None
+        """
+        try:
+            import tempfile
+            import os
+            
+            # Create temp directory if needed
+            if not save_path:
+                save_path = tempfile.gettempdir()
+            
+            filepath = os.path.join(save_path, f"rutracker_{torrent_id}.torrent")
+            
+            # Download torrent file using authenticated session
+            download_url = self.get_download_url(torrent_id)
+            
+            response = self.session.get(download_url, headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Referer': f'{self.BASE_URL}/forum/viewtopic.php?t={torrent_id}'
+            })
+            
+            if response.status_code != 200 or len(response.content) < 100:
+                logger.error(f"Failed to download torrent: HTTP {response.status_code}, size: {len(response.content)}")
+                logger.debug(f"Response: {response.content[:200]}")
+                return None
+            
+            # Save torrent file
+            with open(filepath, 'wb') as f:
+                f.write(response.content)
+            
+            logger.info(f"Downloaded torrent {torrent_id} to {filepath}")
+            return filepath
+                
+        except Exception as e:
+            logger.error(f"Failed to download torrent: {e}")
+            return None
+    
     def get_magnet_link(self, torrent_id: str, title: str = "") -> Optional[str]:
         """
         Get magnet link or download URL for torrent

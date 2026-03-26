@@ -347,6 +347,9 @@ def search_missing(ctx, token: str, library_path: str, output: str | None,
 def add_torrent(ctx, magnet: str, save_path: str | None, host: str, port: int,
                 username: str | None, password: str | None) -> int:
     """Add torrent to qBittorrent"""
+    import tempfile
+    import os
+    
     try:
         client = QBittorrentClient(
             host=host,
@@ -359,7 +362,50 @@ def add_torrent(ctx, magnet: str, save_path: str | None, host: str, port: int,
             click.echo("✗ Failed to connect to qBittorrent", err=True)
             return 1
 
-        if magnet.startswith("magnet:") or magnet.startswith("http"):
+        # Handle RuTracker URLs specially - download .torrent first
+        if 'rutracker.org' in magnet and magnet.startswith('http'):
+            click.echo("Detected RuTracker URL, downloading .torrent file...")
+            
+            # Extract torrent ID from URL
+            import re
+            match = re.search(r't=(\d+)', magnet)
+            if match:
+                torrent_id = match.group(1)
+                
+                # Try to download using py_rutracker if credentials available
+                # For now, just use the URL directly
+                click.echo(f"Torrent ID: {torrent_id}")
+            
+            # Download the URL content and save as .torrent
+            import requests
+            temp_dir = tempfile.gettempdir()
+            temp_file = os.path.join(temp_dir, f"rutracker_{torrent_id if match else 'temp'}.torrent")
+            
+            try:
+                response = requests.get(magnet, headers={
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                })
+                
+                if response.status_code == 200 and len(response.content) > 100:
+                    with open(temp_file, 'wb') as f:
+                        f.write(response.content)
+                    click.echo(f"Downloaded .torrent to {temp_file}")
+                    success = client.add_torrent_file(temp_file, save_path)
+                    
+                    # Clean up temp file
+                    try:
+                        os.unlink(temp_file)
+                    except:
+                        pass
+                else:
+                    click.echo(f"✗ Failed to download .torrent: HTTP {response.status_code}", err=True)
+                    click.echo("Note: RuTracker requires authentication. Use search-missing command instead.", err=True)
+                    return 1
+                    
+            except Exception as e:
+                click.echo(f"✗ Error downloading .torrent: {e}", err=True)
+                return 1
+        elif magnet.startswith("magnet:") or magnet.startswith("http"):
             success = client.add_torrent(magnet, save_path)
         else:
             success = client.add_torrent_file(magnet, save_path)
