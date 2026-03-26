@@ -98,20 +98,46 @@ class LibraryComparator:
     def _normalize_track_key(self, track: Track) -> tuple[str, str]:
         """
         Normalize track key for comparison
-        
+
         Args:
             track: Track
-            
+
         Returns:
             Tuple (normalized_title, normalized_artist)
         """
+        import re
+
         # Normalize title
         title = track.title.lower().strip()
-        # Remove extra spaces, special characters
+        # Remove extra spaces
         title = " ".join(title.split())
-        
+        # Remove trailing punctuation (dots, dashes, etc.)
+        title = re.sub(r'[\.\-\s]+$', '', title)
+        # Normalize unicode characters (ë -> e, etc.)
+        title = self._normalize_unicode(title)
+
         # Normalize artist
         artist = track.artist.lower().strip()
         artist = " ".join(artist.split())
-        
+        # Remove trailing punctuation
+        artist = re.sub(r'[\.\-\s]+$', '', artist)
+        # Normalize unicode characters
+        artist = self._normalize_unicode(artist)
+
         return (title, artist)
+
+    def _normalize_unicode(self, text: str) -> str:
+        """
+        Normalize unicode characters to ASCII equivalents
+
+        Args:
+            text: Input text
+
+        Returns:
+            Normalized text
+        """
+        import unicodedata
+        # Normalize unicode characters (ë -> e, ü -> u, etc.)
+        normalized = unicodedata.normalize('NFKD', text)
+        # Remove diacritics
+        return ''.join(c for c in normalized if not unicodedata.combining(c))
