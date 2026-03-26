@@ -75,9 +75,22 @@ class RuTrackerClient:
                 leeches = getattr(result, 'leeches', None) or getattr(result, 'leechers', 0)
                 
                 # Skip if format doesn't match (check in title)
-                if format and format.upper() not in result.title.upper():
-                    continue
-
+                if format:
+                    title_upper = result.title.upper()
+                    
+                    # Check if desired format is in title
+                    if format.upper() not in title_upper:
+                        logger.debug(f"Skipping - no {format} in title: {result.title[:50]}...")
+                        continue
+                    
+                    # Skip lossless formats when searching for MP3
+                    if format.upper() == 'MP3':
+                        lossless_formats = ['FLAC', 'ALAC', 'WAV', 'APE', 'DSD']
+                        is_lossless = any(fmt in title_upper for fmt in lossless_formats)
+                        if is_lossless:
+                            logger.debug(f"Skipping lossless release: {result.title[:50]}...")
+                            continue
+                
                 torrent = TorrentSearchResult(
                     title=result.title,
                     source=TorrentSource.RUTRACKER,
