@@ -1,0 +1,32 @@
+{
+    "artist_aliases": {
+        "tatu": ["t.a.t.u", "t.a.t.u.", "тату"],
+        "linkin park": ["linkinpark"],
+        "gunsn roses": ["guns n roses", "guns n' roses", "guns and roses"],
+        "acdc": ["ac/dc", "ac dc"],
+        "thirty seconds to mars": ["30 seconds to mars", "30secondstomars", "thirtysecondstomars"]
+    },
+
+    "number_words": {
+        "0": "zero", "1": "one", "2": "two", "3": "three", "4": "four",
+        "5": "five", "6": "six", "7": "seven", "8": "eight", "9": "nine",
+        "10": "ten", "20": "twenty", "30": "thirty", "40": "forty", "50": "fifty",
+        "100": "hundred", "1000": "thousand"
+    },
+
+    "name_variants": {
+        "цой": ["викторцой", "цойвиктор"],
+        "шевичук": ["юрийшевичук", "шевичукюрий"],
+        "кино": ["викторцойкино", "цойкино"],
+        "sting": ["gordonsumner", "gordonsting"],
+        "madonna": ["madonnalouiseciccone"],
+        "eminem": ["marshalmathers", "slimshady"]
+    },
+
+    "title_cleanup_patterns": [
+        "^\\d+[x\\.]?\\d*\\s*[-\\.]\\s*",
+        "^(ost|soundtrack|саундтрек)\\s*[-:]\\s*",
+        "\\s*\\([^)]*?(ost|soundtrack|саундтрек|radio edit|album version|single version|remastered?|extended|instrumental|feat\\.?|ft\\.?)[^)]*?\\)",
+        "\\s*[-(](ost|soundtrack|саундтрек)[\\s)]*"
+    ]
+}

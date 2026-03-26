@@ -12,6 +12,5 @@
       "Bash(git push *)",
       "Bash(git mv *)"
     ]
-  },
-  "$version": 3
+  }
 }

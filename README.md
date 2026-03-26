@@ -7,6 +7,13 @@ Compare your local MP3 library with your collection on zvuk.com music streaming 
 - 📁 Scan local MP3 library with metadata extraction (ID3 tags)
 - 🎵 Fetch your collection from zvuk.com via GraphQL API
 - 🔍 Compare libraries and find differences
+- 🧠 Smart track matching with normalization:
+  - Artist aliases (t.A.T.u. = Тату = tatu)
+  - Multi-artist tracks (Placebo feat. Alison Mosshart = Placebo)
+  - Number/word conversion (30 Seconds to Mars = THIRTY SECONDS TO MARS)
+  - Remove "The" prefix (The Beatles = Beatles)
+  - Name variants (Цой = Виктор Цой)
+  - Title cleanup (track numbers, OST markers, remaster info)
 - 📊 Export results to CSV files
 - 💻 Console output with summary and detailed view
 
@@ -188,9 +195,19 @@ python -m pytest tests/ -v
 
 ## Version
 
-0.2.0 (current)
+0.2.1 (current)
 
 ### Changelog
+
+**v0.2.1**
+- Smart track matching with advanced normalization
+- Artist aliases (t.A.T.u. = Тату, AC/DC = ACDC)
+- Multi-artist track matching (handles "feat.", ",", "&", etc.)
+- Number-to-word conversion (30 Seconds → Thirty Seconds)
+- Automatic "The" prefix removal
+- Name variants support (Цой = Виктор Цой)
+- Title cleanup (track numbers, OST, remaster markers)
+- External JSON configuration for normalization rules
 
 **v0.2.0**
 - Improved CSV export with UTF-8 BOM encoding

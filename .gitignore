@@ -22,6 +22,7 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+.pytest_cache/
 
 # Environment
 .env
@@ -32,6 +33,10 @@ wheels/
 .idea/
 *.swp
 *.swo
+
+# Qwen
+.qwen/
+CONTEXT.md
 
 # OS
 .DS_Store
