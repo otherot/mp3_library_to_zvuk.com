@@ -17,6 +17,8 @@ logger = logging.getLogger(__name__)
 
 class RuTrackerClient:
     """Client for RuTracker.org"""
+    
+    BASE_URL = "https://rutracker.org"
 
     def __init__(self, login: Optional[str] = None, password: Optional[str] = None):
         """
@@ -111,7 +113,7 @@ class RuTrackerClient:
     
     def download_torrent_file(self, torrent_id: str, save_path: str = None) -> Optional[str]:
         """
-        Download .torrent file from RuTracker
+        Download .torrent file from RuTracker using py_rutracker-client
         
         Args:
             torrent_id: Torrent ID (topic_id)
@@ -120,35 +122,28 @@ class RuTrackerClient:
         Returns:
             Path to downloaded .torrent file or None
         """
+        if not self.client:
+            logger.error("RuTracker client not authenticated")
+            return None
+        
         try:
-            import tempfile
             import os
             
-            # Create temp directory if needed
+            # Create save path if needed
             if not save_path:
+                import tempfile
                 save_path = tempfile.gettempdir()
             
-            filepath = os.path.join(save_path, f"rutracker_{torrent_id}.torrent")
-            
-            # Download torrent file using authenticated session
+            # Use py_rutracker-client to download - pass full URL
             download_url = self.get_download_url(torrent_id)
+            file_path = self.client.download(download_url, save_path=save_path)
             
-            response = self.session.get(download_url, headers={
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'Referer': f'{self.BASE_URL}/forum/viewtopic.php?t={torrent_id}'
-            })
-            
-            if response.status_code != 200 or len(response.content) < 100:
-                logger.error(f"Failed to download torrent: HTTP {response.status_code}, size: {len(response.content)}")
-                logger.debug(f"Response: {response.content[:200]}")
+            if file_path:
+                logger.info(f"Downloaded torrent {torrent_id} to {file_path}")
+                return file_path
+            else:
+                logger.error(f"Failed to download torrent {torrent_id}")
                 return None
-            
-            # Save torrent file
-            with open(filepath, 'wb') as f:
-                f.write(response.content)
-            
-            logger.info(f"Downloaded torrent {torrent_id} to {filepath}")
-            return filepath
                 
         except Exception as e:
             logger.error(f"Failed to download torrent: {e}")

@@ -343,9 +343,22 @@ def search_missing(ctx, token: str, library_path: str, output: str | None,
     default=None,
     help="qBittorrent Web UI password"
 )
+@click.option(
+    "--rutracker-login",
+    type=str,
+    default=None,
+    help="RuTracker login (for downloading .torrent files)"
+)
+@click.option(
+    "--rutracker-password",
+    type=str,
+    default=None,
+    help="RuTracker password (for downloading .torrent files)"
+)
 @click.pass_context
 def add_torrent(ctx, magnet: str, save_path: str | None, host: str, port: int,
-                username: str | None, password: str | None) -> int:
+                username: str | None, password: str | None,
+                rutracker_login: str | None, rutracker_password: str | None) -> int:
     """Add torrent to qBittorrent"""
     import tempfile
     import os
@@ -369,42 +382,34 @@ def add_torrent(ctx, magnet: str, save_path: str | None, host: str, port: int,
             # Extract torrent ID from URL
             import re
             match = re.search(r't=(\d+)', magnet)
-            if match:
-                torrent_id = match.group(1)
-                
-                # Try to download using py_rutracker if credentials available
-                # For now, just use the URL directly
-                click.echo(f"Torrent ID: {torrent_id}")
-            
-            # Download the URL content and save as .torrent
-            import requests
-            temp_dir = tempfile.gettempdir()
-            temp_file = os.path.join(temp_dir, f"rutracker_{torrent_id if match else 'temp'}.torrent")
-            
-            try:
-                response = requests.get(magnet, headers={
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                })
-                
-                if response.status_code == 200 and len(response.content) > 100:
-                    with open(temp_file, 'wb') as f:
-                        f.write(response.content)
-                    click.echo(f"Downloaded .torrent to {temp_file}")
-                    success = client.add_torrent_file(temp_file, save_path)
-                    
-                    # Clean up temp file
-                    try:
-                        os.unlink(temp_file)
-                    except:
-                        pass
-                else:
-                    click.echo(f"✗ Failed to download .torrent: HTTP {response.status_code}", err=True)
-                    click.echo("Note: RuTracker requires authentication. Use search-missing command instead.", err=True)
-                    return 1
-                    
-            except Exception as e:
-                click.echo(f"✗ Error downloading .torrent: {e}", err=True)
+            if not match:
+                click.echo("✗ Could not extract torrent ID from URL", err=True)
                 return 1
+            
+            torrent_id = match.group(1)
+            click.echo(f"Torrent ID: {torrent_id}")
+            
+            # Download .torrent using RuTracker client if credentials provided
+            temp_file = None
+            if rutracker_login and rutracker_password:
+                from src.torrent.rutracker_client import RuTrackerClient
+                rt_client = RuTrackerClient(rutracker_login, rutracker_password)
+                temp_file = rt_client.download_torrent_file(torrent_id)
+            
+            if not temp_file:
+                click.echo("✗ Failed to download .torrent file", err=True)
+                click.echo("Note: Provide --rutracker-login and --rutracker-password for RuTracker downloads", err=True)
+                return 1
+            
+            click.echo(f"Downloaded .torrent to {temp_file}")
+            success = client.add_torrent_file(temp_file, save_path)
+            
+            # Clean up temp file
+            try:
+                os.unlink(temp_file)
+            except:
+                pass
+                
         elif magnet.startswith("magnet:") or magnet.startswith("http"):
             success = client.add_torrent(magnet, save_path)
         else:
